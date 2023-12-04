@@ -54,19 +54,21 @@ pub fn part2(input: &[Card]) -> usize {
     let min_id = input.iter().map(|c| c.id).min().unwrap() as usize;
     let max_id = input.iter().map(|c| c.id).max().unwrap() as usize;
 
-    let mut counts = vec![1usize; max_id];
+    // (Card count, cached winners)
+    let mut counts = vec![(1usize, 0usize); max_id];
+
+    for (i, c) in input.iter().enumerate() {
+        counts[i].1 = c.own.intersection(&c.winners).count();
+    }
 
     for i in min_id - 1..max_id {
-        for _ in 0..counts[i] {
-            let card = &input[i];
-            let winners = card.own.intersection(&card.winners).count();
-            for w in 1..=winners {
-                counts[i + w] += 1;
-            }
+        let (count, winners) = counts[i];
+        for w in 1..=winners {
+            counts[i + w].0 += count;
         }
     }
 
-    counts.into_iter().sum()
+    counts.into_iter().map(|(x, _)| x).sum()
 }
 
 #[cfg(test)]
