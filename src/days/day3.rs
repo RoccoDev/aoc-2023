@@ -50,10 +50,10 @@ pub fn part1(input: &[Slot]) -> i32 {
     let grid_max_x = input.iter().map(|s| s.coords.0).max().unwrap();
     let grid_max_y = input.iter().map(|s| s.coords.1).max().unwrap();
 
-    let mut grid = vec![vec![0u8; grid_max_x + 1]; grid_max_y + 1];
+    let mut grid = vec![vec![false; grid_max_x + 1]; grid_max_y + 1];
     for slot in input {
         if let SlotType::Symbol(_) = slot.ty {
-            grid[slot.coords.1][slot.coords.0] = 1;
+            grid[slot.coords.1][slot.coords.0] = true;
         }
     }
 
@@ -64,7 +64,7 @@ pub fn part1(input: &[Slot]) -> i32 {
             let (max_x, max_y) = slot.end();
             for y in min_y.saturating_sub(1)..=max_y.saturating_add(1).min(grid_max_y) {
                 for x in min_x.saturating_sub(1)..=max_x.saturating_add(1).min(grid_max_x) {
-                    if grid[y][x] != 0 {
+                    if grid[y][x] {
                         sum += n;
                         continue 'slots;
                     }
