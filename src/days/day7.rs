@@ -48,7 +48,6 @@ pub fn part2(input: &[HandDef]) -> usize {
         .sum()
 }
 
-// Very ugly, quite slow (~24ms), don't have much time now, will fix later
 impl HandDef {
     pub fn calc(&self) -> Hand {
         let mut chars = self.name.clone();
@@ -62,17 +61,10 @@ impl HandDef {
                     'Q' => 2,
                     'J' => 3,
                     'T' => 4,
-                    '9' => 5,
-                    '8' => 6,
-                    '7' => 7,
-                    '6' => 8,
-                    '5' => 9,
-                    '4' => 10,
-                    '3' => 11,
-                    '2' => 12,
+                    c @ '2'..='9' => 5 + 9 - c.to_digit(10).unwrap() as i64,
                     c => panic!("invalid digit {c}"),
                 };
-                10i64.pow((6 - i as u32) * 2) * res
+                10i64.pow((5 - i as u32) * 2) * res
             })
             .sum();
         chars.sort_unstable();
@@ -88,8 +80,8 @@ impl HandDef {
             &[1, 4] => 5,
             &[2, 3] => 4,
             &[1, 1, 3] => 3,
-            v if v.iter().filter(|&&c| c == 2).count() == 2 => 2,
-            v if v.iter().filter(|&&c| c == 2).count() == 1 => 1,
+            &[1, 2, 2] => 2,
+            &[1, 1, 1, 2] => 1,
             &[1, 1, 1, 1, 1] => 0,
             c => panic!("invalid config {c:?}"),
         };
@@ -111,72 +103,55 @@ impl HandDef {
                     'K' => 1,
                     'Q' => 2,
                     'T' => 3,
-                    '9' => 4,
-                    '8' => 5,
-                    '7' => 6,
-                    '6' => 7,
-                    '5' => 8,
-                    '4' => 9,
-                    '3' => 10,
-                    '2' => 11,
+                    c @ '2'..='9' => 4 + 9 - c.to_digit(10).unwrap() as i64,
                     'J' => 12,
                     c => panic!("invalid digit {c}"),
                 };
-                10i64.pow((6 - i as u32) * 2) * res
+                10i64.pow((5 - i as u32) * 2) * res
             })
             .sum();
-        chars.sort_unstable();
 
-        chars = chars.iter().copied().filter(|&c| c != 'J').collect_vec();
+        chars.sort_unstable();
+        let new_chars = chars.iter().copied().filter(|&c| c != 'J').collect_vec();
+        let js = chars.len() - new_chars.len();
+        chars = new_chars;
 
         let mut max_score = -1;
+        let mut buf = vec![];
         for perm in repeat_n(
-            ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2'].iter(),
-            5 - chars.len(),
+            ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2'],
+            js,
         )
-        .multi_cartesian_product()
+        .multi_cartesian_product().chain(std::iter::once(vec![]))
         {
-            let mut chars = chars.clone();
-            chars.extend(perm);
-            chars.sort_unstable();
-            let mut max_dups = chars
+            if perm.is_empty() && js != 0 {
+                continue;
+            } 
+            chars.clone_into(&mut buf);
+            buf.extend(perm);
+            buf.sort_unstable();
+            let mut max_dups = buf
                 .iter()
                 .dedup_with_count()
                 .map(|(num, _)| num)
                 .collect_vec();
             max_dups.sort_unstable();
             let dup_score = match &max_dups[..] {
-                &[5] => 6,
+                &[5] =>  {
+                    max_score = 6;
+                    break;
+                },
                 &[1, 4] => 5,
                 &[2, 3] => 4,
                 &[1, 1, 3] => 3,
-                v if v.iter().filter(|&&c| c == 2).count() == 2 => 2,
-                v if v.iter().filter(|&&c| c == 2).count() == 1 => 1,
+                &[1, 2, 2] => 2,
+                &[1, 1, 1, 2] => 1,
                 &[1, 1, 1, 1, 1] => 0,
                 c => panic!("invalid config {c:?}"),
             };
             if dup_score > max_score {
                 max_score = dup_score;
             }
-        }
-
-        if max_score < 0 {
-            let mut max_dups = chars
-                .iter()
-                .dedup_with_count()
-                .map(|(num, _)| num)
-                .collect_vec();
-            max_dups.sort_unstable();
-            max_score = match &max_dups[..] {
-                &[5] => 6,
-                &[1, 4] => 5,
-                &[2, 3] => 4,
-                &[1, 1, 3] => 3,
-                v if v.iter().filter(|&&c| c == 2).count() == 2 => 2,
-                v if v.iter().filter(|&&c| c == 2).count() == 1 => 1,
-                &[1, 1, 1, 1, 1] => 0,
-                c => panic!("invalid config {c:?}"),
-            };
         }
 
         Hand {
@@ -198,7 +173,7 @@ T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483"#;
-        assert_eq!(part1(&parse(&input)), 288);
+        assert_eq!(part1(&parse(input)), 6440);
     }
 
     #[test]
@@ -208,6 +183,6 @@ T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483"#;
-        assert_eq!(part2(&parse(&input)), 71503);
+        assert_eq!(part2(&parse(input)), 5905);
     }
 }
