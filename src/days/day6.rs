@@ -33,10 +33,10 @@ pub fn part1(input: &[Race]) -> i64 {
 pub fn part2(input: &[Race]) -> i64 {
     // Problem is still really easy, let's try to think of a way to merge the numbers without
     // having to parse the input again :')
-    Race {
-        time: stack_numbers(input.iter().map(|r| r.time)),
-        distance: stack_numbers(input.iter().map(|r| r.distance)),
-    }
+    Race::new(
+        stack_numbers(input.iter().map(|r| r.time)),
+        stack_numbers(input.iter().map(|r| r.distance)),
+    )
     .num_ways()
 }
 
