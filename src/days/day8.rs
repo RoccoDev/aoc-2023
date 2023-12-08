@@ -72,10 +72,8 @@ pub fn part2(input: &Sheet) -> usize {
         .filter(|n| n.id.ends_with("A"))
         .collect_vec();
     for (i, &dir) in input.directions.iter().cycle().enumerate() {
-        for node in &mut cur {
+        for (j, node) in cur.iter_mut().enumerate() {
             *node = &&nodes[if dir { &node.right } else { &node.left }];
-        }
-        for (j, node) in cur.iter().enumerate() {
             if node.id.ends_with("Z") {
                 if !memo_state.contains_key(&j) {
                     memo_state.insert(j, i + 1);
@@ -83,10 +81,28 @@ pub fn part2(input: &Sheet) -> usize {
             }
         }
         if memo_state.len() == cur.len() {
-            todo!("lcm")
+            return lcm(memo_state.into_values());
         }
     }
     unreachable!()
+}
+
+fn gcd(mut n: usize, mut d: usize) -> usize {
+    while n != 0 && d != 0 {
+        n %= d;
+        if n == 0 {
+            break;
+        }
+        d %= n;
+    }
+    n + d
+}
+
+fn lcm(nums: impl IntoIterator<Item = usize>) -> usize {
+    nums.into_iter().fold(0, |i, c| match (i, c) {
+        (0, a) => a,
+        (n, b) => n * b / gcd(n, b),
+    })
 }
 
 #[cfg(test)]
@@ -115,6 +131,12 @@ AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)"#;
         assert_eq!(part1(&parse(&input)), 6);
+    }
+
+    #[test]
+    fn lcm() {
+        assert_eq!(12, super::lcm([1, 2, 3, 12]));
+        assert_eq!(20, super::lcm([5, 4]));
     }
 
     #[test]
