@@ -71,7 +71,7 @@ mod tests {
         let input = r#"0 3 6 9 12 15
 1 3 6 10 15 21
 10 13 16 21 30 45"#;
-        assert_eq!(part1(&parse(&input)), 288);
+        assert_eq!(part1(&parse(&input)), 114);
     }
 
     #[test]
@@ -79,6 +79,6 @@ mod tests {
         let input = r#"0 3 6 9 12 15
 1 3 6 10 15 21
 10 13 16 21 30 45"#;
-        assert_eq!(part2(&parse(&input)), 71503);
+        assert_eq!(part2(&parse(&input)), 2);
     }
 }
