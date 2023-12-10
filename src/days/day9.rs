@@ -25,7 +25,7 @@ pub fn part1(input: &[Sequence]) -> i32 {
     input
         .iter()
         .map(|s| {
-            let mut next = s.0[s.0.len() - 1];
+            let mut next = *s.0.last().unwrap();
             let mut buf = s.0.clone();
             while buf.iter().any(|&n| n != 0) {
                 let old = buf.clone();
@@ -34,7 +34,7 @@ pub fn part1(input: &[Sequence]) -> i32 {
                     let &[a, b] = window else { panic!() };
                     buf.push(b - a);
                 }
-                next += buf[buf.len() - 1];
+                next += buf.last().unwrap();
             }
             next
         })
@@ -46,7 +46,7 @@ pub fn part2(input: &[Sequence]) -> i32 {
     input
         .iter()
         .map(|s| {
-            let mut next = s.0[0];
+            let mut next = *s.0.first().unwrap();
             let mut buf = s.0.clone();
             while buf.iter().any(|&n| n != 0) {
                 let old = buf.clone();
@@ -55,7 +55,7 @@ pub fn part2(input: &[Sequence]) -> i32 {
                     let &[a, b] = window else { panic!() };
                     buf.push(a - b);
                 }
-                next += buf[0];
+                next += buf.first().unwrap();
             }
             next
         })
