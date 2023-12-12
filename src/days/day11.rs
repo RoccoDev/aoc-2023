@@ -1,9 +1,8 @@
-use fxhash::FxHashSet;
 use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub struct Galaxies {
-    galaxies: FxHashSet<(usize, usize)>,
+    galaxies: Vec<(usize, usize)>,
     empty_rows: Vec<usize>,
     empty_columns: Vec<usize>,
 }
@@ -27,12 +26,9 @@ fn parse(input: &str) -> Galaxies {
         .filter(|(_, c)| c.chars().all(|c| c == '.'))
         .map(|(y, _)| y)
         .collect_vec();
-    let mut empty_columns = vec![];
-    for x in 0..w {
-        if input.lines().all(|l| l.as_bytes()[x] == b'.') {
-            empty_columns.push(x);
-        }
-    }
+    let empty_columns = (0..w)
+        .filter(|x| input.lines().all(|l| l.as_bytes()[*x] == b'.'))
+        .collect_vec();
     Galaxies {
         galaxies,
         empty_columns,
@@ -51,18 +47,16 @@ pub fn part2(input: &Galaxies) -> usize {
 }
 
 pub fn solve(input: &Galaxies, add: usize) -> usize {
-    let mut galaxies = input.galaxies.clone().into_iter().collect_vec();
+    let mut galaxies = input.galaxies.clone();
     let add = add - 1;
     for galaxy in &mut galaxies {
         let orig_x = galaxy.0;
+        let orig_y = galaxy.1;
         for x in &input.empty_columns {
             if orig_x >= *x {
                 galaxy.0 += add;
             }
         }
-    }
-    for galaxy in &mut galaxies {
-        let orig_y = galaxy.1;
         for y in &input.empty_rows {
             if orig_y >= *y {
                 galaxy.1 += add;
@@ -70,7 +64,6 @@ pub fn solve(input: &Galaxies, add: usize) -> usize {
         }
     }
 
-    let galaxies: FxHashSet<_> = galaxies.into_iter().collect();
     galaxies
         .iter()
         .combinations(2)
