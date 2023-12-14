@@ -24,11 +24,9 @@ fn parse(input: &str) -> Grid {
     Grid(
         input
             .lines()
-            .enumerate()
-            .map(|(y, l)| {
+            .map(|l| {
                 l.chars()
-                    .enumerate()
-                    .map(|(x, c)| match c {
+                    .map(|c| match c {
                         '.' => Tile::Empty,
                         'O' => Tile::Rock,
                         '#' => Tile::Obstacle,
@@ -43,22 +41,7 @@ fn parse(input: &str) -> Grid {
 #[aoc(day14, part1)]
 pub fn part1(input: &Grid) -> usize {
     let mut input = input.clone();
-    'coords: for (y, x) in (0..input.0.len()).cartesian_product(0..input.0[0].len()) {
-        let c = input.0[y][x];
-        if c == Tile::Rock && y > 0 && input.0[y - 1][x] == Tile::Empty {
-            let mut last_y = y;
-            for y in (0..y).rev() {
-                if input.0[y][x] == Tile::Empty {
-                    input.0[y][x] = c;
-                    input.0[last_y][x] = Tile::Empty;
-                    last_y = y;
-                } else {
-                    continue 'coords;
-                }
-            }
-        }
-    }
-
+    input.move_dir(Direction::North, None);
     let max_y = input.0.len();
     input
         .0
@@ -72,27 +55,23 @@ pub fn part1(input: &Grid) -> usize {
 
 #[aoc(day14, part2)]
 pub fn part2(input: &Grid) -> usize {
+    const TARGET: usize = 1_000_000_000 * 4;
+
     let mut input = input.clone();
     let mut memo = FxHashMap::default();
-    let mut done = false;
     let mut i = 0;
-    while i < 1_000_000_000usize * 4 {
+    while i < TARGET {
         let dir = [
             Direction::North,
             Direction::West,
             Direction::South,
             Direction::East,
         ][i % 4];
-        let res = input.move_dir(dir, &mut memo, i);
-        if !done {
-            if let Some((cycle, j)) = res {
-                input = cycle;
-                let cycle_len = i - j;
-                done = true;
-                while i + cycle_len < 1_000_000_000usize * 4 {
-                    i += cycle_len;
-                }
-            }
+        let res = input.move_dir(dir, Some((&mut memo, i)));
+        if let Some((cycle, j)) = res {
+            input = cycle;
+            let cycle_len = i - j;
+            i += (TARGET - i) / cycle_len * cycle_len;
         }
         i += 1;
     }
@@ -111,68 +90,100 @@ impl Grid {
     pub fn move_dir(
         &mut self,
         dir: Direction,
-        memo: &mut FxHashMap<(Grid, Direction), (Grid, usize)>,
-        i: usize,
+        memo: Option<(&mut FxHashMap<(Grid, Direction), (Grid, usize)>, usize)>,
     ) -> Option<(Grid, usize)> {
-        let key = (self.clone(), dir);
-        if let Some(g) = memo.get(&key) {
-            self.clone_from(&g.0);
-            return Some(g.clone());
-        }
-        loop {
-            let mut moved = false;
-            match dir {
-                Direction::North => {
-                    for y in 0..self.0.len() {
-                        for x in 0..self.0[0].len() {
-                            moved |= self.move_pos(x, y, 0, -1);
-                        }
-                    }
-                }
-                Direction::South => {
-                    for y in (0..self.0.len() - 1).rev() {
-                        for x in 0..self.0[0].len() {
-                            moved |= self.move_pos(x, y, 0, 1);
-                        }
-                    }
-                }
-                Direction::East => {
-                    for x in (0..self.0[0].len() - 1).rev() {
-                        for y in 0..self.0.len() {
-                            moved |= self.move_pos(x, y, 1, 0);
-                        }
-                    }
-                }
-                Direction::West => {
-                    for x in 0..self.0[0].len() {
-                        for y in 0..self.0.len() {
-                            moved |= self.move_pos(x, y, -1, 0);
-                        }
-                    }
-                }
+        let mut key = None;
+        if let Some((memo, _)) = &memo {
+            let k = (self.clone(), dir);
+            if let Some(g) = memo.get(&k) {
+                self.clone_from(&g.0);
+                return Some(g.clone());
             }
-
-            if !moved {
-                memo.insert(key, (self.clone(), i));
+            key = Some(k);
+        }
+        match dir {
+            // Iterator types and logic differ between direction, hard to extract
+            Direction::North => {
+                'coords: for (y, x) in (0..self.0.len()).cartesian_product(0..self.0[0].len()) {
+                    let c = self.0[y][x];
+                    if c == Tile::Rock && y > 0 && self.0[y - 1][x] == Tile::Empty {
+                        let mut last_y = y;
+                        for y in (0..y).rev() {
+                            if self.0[y][x] == Tile::Empty {
+                                self.0[y][x] = c;
+                                self.0[last_y][x] = Tile::Empty;
+                                last_y = y;
+                            } else {
+                                continue 'coords;
+                            }
+                        }
+                    }
+                }
                 return None;
             }
+            Direction::South => {
+                'coords: for (y, x) in (0..self.0.len() - 1)
+                    .rev()
+                    .cartesian_product(0..self.0[0].len())
+                {
+                    let c = self.0[y][x];
+                    if c == Tile::Rock && self.0[y + 1][x] == Tile::Empty {
+                        let mut last_y = y;
+                        for y in y + 1..self.0.len() {
+                            if self.0[y][x] == Tile::Empty {
+                                self.0[y][x] = c;
+                                self.0[last_y][x] = Tile::Empty;
+                                last_y = y;
+                            } else {
+                                continue 'coords;
+                            }
+                        }
+                    }
+                }
+            }
+            Direction::East => {
+                'coords: for (x, y) in
+                    ((0..self.0[0].len() - 1).rev()).cartesian_product(0..self.0.len())
+                {
+                    let c = self.0[y][x];
+                    if c == Tile::Rock && self.0[y][x + 1] == Tile::Empty {
+                        let mut last_x = x;
+                        for x in x + 1..self.0[0].len() {
+                            if self.0[y][x] == Tile::Empty {
+                                self.0[y][x] = c;
+                                self.0[y][last_x] = Tile::Empty;
+                                last_x = x;
+                            } else {
+                                continue 'coords;
+                            }
+                        }
+                    }
+                }
+            }
+            Direction::West => {
+                'coords: for (y, x) in (0..self.0.len()).cartesian_product(0..self.0[0].len()) {
+                    let c = self.0[y][x];
+                    if c == Tile::Rock && x > 0 && self.0[y][x - 1] == Tile::Empty {
+                        let mut last_x = x;
+                        for x in (0..x).rev() {
+                            if self.0[y][x] == Tile::Empty {
+                                self.0[y][x] = c;
+                                self.0[y][last_x] = Tile::Empty;
+                                last_x = x;
+                            } else {
+                                continue 'coords;
+                            }
+                        }
+                    }
+                }
+            }
         }
-    }
 
-    fn move_pos(&mut self, x: usize, y: usize, dx: isize, dy: isize) -> bool {
-        let c = self.0[y][x];
-        let new_y = y as isize + dy;
-        let new_x = x as isize + dx;
-        if c == Tile::Rock
-            && new_y >= 0
-            && new_x >= 0
-            && self.0[new_y as usize][new_x as usize] == Tile::Empty
-        {
-            self.0[new_y as usize][new_x as usize] = c;
-            self.0[y][x] = Tile::Empty;
-            return true;
+        if let Some(key) = key {
+            let (memo, i) = memo.unwrap();
+            memo.insert(key, (self.clone(), i));
         }
-        false
+        return None;
     }
 }
 
