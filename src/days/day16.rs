@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use itertools::Itertools;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -62,7 +64,7 @@ pub fn part1(input: &Grid) -> usize {
     solve(input, (0, 0, Direction::Right))
 }
 
-// 2.78s on a 5700X. I paid for 8C/16T, let's use 8C/16T!
+// 22ms on a 5700X. I paid for 8C/16T, let's use 8C/16T!
 #[aoc(day16, part2)]
 pub fn part2_brute(input: &Grid) -> usize {
     let (w, h) = (input.0[0].len(), input.0.len());
@@ -100,40 +102,35 @@ fn solve(input: &Grid, start: (usize, usize, Direction)) -> usize {
             dir: start.2,
             moved: false,
         });
-    let mut changed = true;
-    while changed {
-        changed = false;
-        let mut new = input.clone();
-        for (y, l) in input.0.into_iter().enumerate() {
-            for (x, c) in l.into_iter().enumerate() {
-                let tile = c.tile;
-                for (i, beam) in c.beams.into_iter().enumerate().filter(|(_, b)| !b.moved) {
-                    let dirs = match (tile, beam.dir) {
-                        (Tile::MirrorR, d) => vec![d.reflect_r()],
-                        (Tile::MirrorL, d) => vec![d.reflect_l()],
-                        (Tile::SplitVert, d) if d != Direction::Up && d != Direction::Down => {
-                            vec![Direction::Up, Direction::Down]
-                        }
-                        (Tile::SplitHori, d) if d != Direction::Left && d != Direction::Right => {
-                            vec![Direction::Left, Direction::Right]
-                        }
-                        (_, d) => vec![d],
-                    };
-                    new.0[y][x].beams[i].moved = true;
-                    for dir in dirs {
-                        let (dx, dy) = dir.delta();
-                        if let Some(c) = new.get_mut(x as isize + dx, y as isize + dy) {
-                            if c.beams.iter().find(|b| b.dir == dir).is_some() {
-                                continue;
-                            }
-                            c.beams.push(Beam { dir, moved: false });
-                            changed = true;
-                        }
-                    }
+    let mut to_move: VecDeque<(usize, usize)> = VecDeque::new();
+    to_move.push_back((start.0, start.1));
+    while let Some((x, y)) = to_move.pop_back() {
+        let cell = &mut input.0[y][x];
+        let mut dirs: Vec<Direction> = vec![];
+        for beam in cell.beams.iter_mut().filter(|b| !b.moved) {
+            dirs.extend(match (cell.tile, beam.dir) {
+                (Tile::MirrorR, d) => vec![d.reflect_r()],
+                (Tile::MirrorL, d) => vec![d.reflect_l()],
+                (Tile::SplitVert, d) if d != Direction::Up && d != Direction::Down => {
+                    vec![Direction::Up, Direction::Down]
                 }
+                (Tile::SplitHori, d) if d != Direction::Left && d != Direction::Right => {
+                    vec![Direction::Left, Direction::Right]
+                }
+                (_, d) => vec![d],
+            });
+            beam.moved = true;
+        }
+        for dir in dirs {
+            let (dx, dy) = dir.delta();
+            if let Some(c) = input.get_mut(x as isize + dx, y as isize + dy) {
+                if c.beams.iter().find(|b| b.dir == dir).is_some() {
+                    continue;
+                }
+                to_move.push_back(((x as isize + dx) as usize, (y as isize + dy) as usize));
+                c.beams.push(Beam { dir, moved: false });
             }
         }
-        input = new;
     }
     input
         .0
