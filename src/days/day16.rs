@@ -108,23 +108,23 @@ fn solve(input: &Grid, start: (usize, usize, Direction)) -> usize {
         let cell = &mut input.0[y][x];
         let mut dirs: Vec<Direction> = vec![];
         for beam in cell.beams.iter_mut().filter(|b| !b.moved) {
-            dirs.extend(match (cell.tile, beam.dir) {
-                (Tile::MirrorR, d) => vec![d.reflect_r()],
-                (Tile::MirrorL, d) => vec![d.reflect_l()],
+            match (cell.tile, beam.dir) {
+                (Tile::MirrorR, d) => dirs.push(d.reflect_r()),
+                (Tile::MirrorL, d) => dirs.push(d.reflect_l()),
                 (Tile::SplitVert, d) if d != Direction::Up && d != Direction::Down => {
-                    vec![Direction::Up, Direction::Down]
+                    dirs.extend([Direction::Up, Direction::Down]);
                 }
                 (Tile::SplitHori, d) if d != Direction::Left && d != Direction::Right => {
-                    vec![Direction::Left, Direction::Right]
+                    dirs.extend([Direction::Left, Direction::Right]);
                 }
-                (_, d) => vec![d],
-            });
+                (_, d) => dirs.push(d),
+            };
             beam.moved = true;
         }
         for dir in dirs {
             let (dx, dy) = dir.delta();
             if let Some(c) = input.get_mut(x as isize + dx, y as isize + dy) {
-                if c.beams.iter().find(|b| b.dir == dir).is_some() {
+                if c.beams.iter().any(|b| b.dir == dir) {
                     continue;
                 }
                 to_move.push_back(((x as isize + dx) as usize, (y as isize + dy) as usize));
