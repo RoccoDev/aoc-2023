@@ -9,13 +9,13 @@ pub struct Grid(Vec<Vec<u32>>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Node {
     coords: (isize, isize),
-    cost: u32,
     direction: Direction,
     steps: u8,
+    cost: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Direction {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -88,7 +88,7 @@ fn dijkstra(grid: &Grid, source: Node, end: (isize, isize), min_steps: u8, max_s
         }
         for neighbor in node.neighbors(grid, min_steps, max_steps) {
             let next = (cost + neighbor.cost, neighbor);
-            if next.0 < *distances.entry(neighbor).or_insert(u32::MAX) {
+            if next.0 < *distances.get(&neighbor).unwrap_or(&u32::MAX) {
                 distances.insert(neighbor, next.0);
                 heap.push(Reverse(next));
             }
@@ -153,7 +153,7 @@ impl Node {
 }
 
 impl Direction {
-    fn delta(&self) -> (isize, isize) {
+    pub fn delta(&self) -> (isize, isize) {
         match self {
             Direction::Up => (0, -1),
             Direction::Down => (0, 1),
