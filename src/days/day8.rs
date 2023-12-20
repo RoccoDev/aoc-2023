@@ -98,7 +98,7 @@ fn gcd(mut n: usize, mut d: usize) -> usize {
     n + d
 }
 
-fn lcm(nums: impl IntoIterator<Item = usize>) -> usize {
+pub fn lcm(nums: impl IntoIterator<Item = usize>) -> usize {
     nums.into_iter().fold(0, |i, c| match (i, c) {
         (0, a) => a,
         (n, b) => n * b / gcd(n, b),
