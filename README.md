@@ -9,6 +9,9 @@ I don't have as much time compared to the previous years, so I'm relaxing the ru
 It is worth nothing that I upgraded my CPU (R5 3600 -> R7 5700X) this year, if the total 
 time is too low I can try without `-C target-cpu=native`, for instance.
 
+**STATUS (25/12/2023):** Challenge success! Total runner duration is 915 ± 20ms. I think I can improve the solution for Day 24, just have to 
+dust off some linear algebra techniques. That should also get rid of the `num_bigint` crate that I used to solve systems with many congruences.
+
 ### Rules
 * Only **stable** Rust
 * No references to the input file, i.e. input is always loaded by copying it
